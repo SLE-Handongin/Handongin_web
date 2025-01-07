@@ -1,15 +1,51 @@
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import db from '../../firebase/firebase'; // firebase 경로 import
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
-function Score({LostNum, LostTotal, FoundNum, FoundTotal}) {
+function Score() {
+  const [lostNum, setLostNum] = useState(0);
+  const [lostTotal, setLostTotal] = useState(0);
+  const [foundNum, setFoundNum] = useState(0);
+  const [foundTotal, setFoundTotal] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // `lostItems`에서 데이터 가져오기
+        const lostRef = collection(db, 'lostItems');
+        const lostSnapshot = await getDocs(lostRef);
+        const lostUnresolved = query(lostRef, where('solved', '==', false));
+        const lostUnresolvedSnapshot = await getDocs(lostUnresolved);
+
+        setLostTotal(lostSnapshot.size); // 총 게시물 수
+        setLostNum(lostUnresolvedSnapshot.size); // 미해결 수
+
+        // `foundItems`에서 데이터 가져오기
+        const foundRef = collection(db, 'FoundItems');
+        const foundSnapshot = await getDocs(foundRef);
+        const foundUnresolved = query(foundRef, where('solved', '==', false));
+        const foundUnresolvedSnapshot = await getDocs(foundUnresolved);
+
+        setFoundTotal(foundSnapshot.size); // 총 게시물 수
+        setFoundNum(foundUnresolvedSnapshot.size); // 미해결 수
+      } catch (error) {
+        console.error('Firestore 데이터 가져오기 실패:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <ScoreContainer>
       <Lost borderColor="#FF7473">
         <Title>분실한 물품</Title>
         <NumberContainer>
           <NumberRow>
-            <NumberText>{LostNum}</NumberText>
+            <NumberText>{lostNum}</NumberText>
             <Divider>|</Divider>
-            <NumberText>{LostTotal}</NumberText>
+            <NumberText>{lostTotal}</NumberText>
           </NumberRow>
           <NumberDescription>
             <DescriptionText>미해결</DescriptionText>
@@ -21,9 +57,9 @@ function Score({LostNum, LostTotal, FoundNum, FoundTotal}) {
         <Title>보관중인 물품</Title>
         <NumberContainer>
           <NumberRow>
-            <NumberText>{FoundNum}</NumberText>
+            <NumberText>{foundNum}</NumberText>
             <Divider>|</Divider>
-            <NumberText>{FoundTotal}</NumberText>
+            <NumberText>{foundTotal}</NumberText>
           </NumberRow>
           <NumberDescription>
             <DescriptionText>미해결</DescriptionText>
@@ -42,10 +78,8 @@ const ScoreContainer = styled.div`
   height: 110px;
   position: relative;
   margin-top: 125px; 
-`
-/*
-  
-*/ 
+`;
+
 const Lost = styled.div`
   display: flex;
   position: absolute;
@@ -63,7 +97,6 @@ const Lost = styled.div`
 
 const Found = styled(Lost)`
   left: 1452px;
-
   border-color: ${(props) => props.borderColor};
 `;
 
@@ -77,7 +110,6 @@ const Title = styled.p`
   font-size: 16px;
   font-weight: bold;
   z-index: 1;
-
 `;
 
 const NumberContainer = styled.div`
@@ -107,7 +139,6 @@ const Divider = styled.div`
 
 const NumberDescription = styled.div`
   display: flex;
-  margin-top: -15px;
   padding-left: 12px;
   justify-content: space-between; 
 
@@ -116,9 +147,8 @@ const NumberDescription = styled.div`
 `;
 
 const DescriptionText = styled.p`
-  marign: 0;
+  margin: 0;
   text-align: center; 
-  
   font-size: 17px;
   color: #aaa;
 `;
